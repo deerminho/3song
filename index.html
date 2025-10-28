@@ -18,60 +18,6 @@
             padding: 10px;
         }
 
-        .api-key-container {
-            max-width: 700px;
-            margin: 0 auto 15px;
-            background: white;
-            border-radius: 12px;
-            padding: 15px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-            border: 2px solid rgba(255, 193, 7, 0.5);
-        }
-
-        .api-key-container h3 {
-            color: #f57c00;
-            font-size: 14px;
-            margin-bottom: 10px;
-        }
-
-        .api-key-container input {
-            width: 100%;
-            padding: 10px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 13px;
-            margin-bottom: 10px;
-        }
-
-        .api-key-container button {
-            width: 100%;
-            padding: 10px;
-            background: #5c6bc0;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-
-        .api-key-container button:hover {
-            background: #3949ab;
-        }
-
-        .api-key-container .info {
-            font-size: 11px;
-            color: #666;
-            margin-top: 8px;
-            line-height: 1.4;
-        }
-
-        .api-key-container .info a {
-            color: #5c6bc0;
-            text-decoration: none;
-        }
-
         .header-image {
             width: 100%;
             max-width: 700px;
@@ -239,14 +185,14 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            font-size: 40px;
+            font-size: 30px;
             text-shadow: 0 0 20px rgba(0,0,0,0.5);
             pointer-events: none;
             transition: all 0.3s ease;
         }
 
         .youtube-link:hover::after {
-            font-size: 50px;
+            font-size: 38px;
             text-shadow: 0 0 30px rgba(255,0,0,0.8);
         }
 
@@ -333,11 +279,11 @@
             }
 
             .youtube-link::after {
-                font-size: 35px;
+                font-size: 25px;
             }
 
             .youtube-link:hover::after {
-                font-size: 45px;
+                font-size: 32px;
             }
 
             .link-label {
@@ -354,17 +300,6 @@
     </style>
 </head>
 <body>
-    <!-- API 키 입력 섹션 -->
-    <div class="api-key-container" id="apiKeySection">
-        <h3>🔑 YouTube API 키 설정</h3>
-        <input type="text" id="apiKeyInput" placeholder="YouTube Data API v3 키를 입력하세요">
-        <button onclick="saveApiKey()">저장하고 시작하기</button>
-        <div class="info">
-            💡 API 키 없이도 플레이어는 작동하지만, 조회수/좋아요/댓글 수가 표시되지 않습니다.<br>
-            API 키 발급: <a href="https://console.cloud.google.com/apis/credentials" target="_blank">Google Cloud Console</a> → API 및 서비스 → 사용자 인증 정보
-        </div>
-    </div>
-
     <div class="header-image">
         <img src="preview2.jpg" alt="배경 이미지">
     </div>
@@ -536,9 +471,8 @@
             }
         }
 
-        // 페이지 로드 시 API 키 섹션 숨기고 바로 통계 로드
+        // 페이지 로드 시 바로 통계 로드
         window.addEventListener('load', () => {
-            document.getElementById('apiKeySection').style.display = 'none';
             loadAllStats();
             statsUpdateInterval = setInterval(loadAllStats, 30000);
         });
@@ -629,6 +563,7 @@
         }
 
         function onPlayerReady(event, songNum) {
+            // 첫 번째 곡은 자동 재생
             if (songNum === 1) {
                 event.target.playVideo();
                 playedSongs.push(1);
@@ -636,7 +571,7 @@
         }
 
         function getRandomTime() {
-            return Math.floor(40 + Math.random() * 6);
+            return Math.floor(38 + Math.random() * 13);
         }
 
         function getRandomNextSong() {
@@ -711,18 +646,22 @@
         }
 
         function goToNextSong() {
+            // 기존 타이머 제거
             if (autoSwitchTimeout) clearTimeout(autoSwitchTimeout);
             if (countdownInterval) clearInterval(countdownInterval);
             
+            // 현재 곡 정지 및 숨기기
             document.getElementById(`player${currentSong}`).classList.add('hidden');
             if (players[currentSong]) {
                 players[currentSong].pauseVideo();
             }
             pauseCountdown(currentSong);
             
+            // 다음 곡 랜덤 선택
             const nextSong = getRandomNextSong();
             playedSongs.push(nextSong);
             
+            // 다음 곡 표시 및 재생
             document.getElementById(`player${nextSong}`).classList.remove('hidden');
             resetCountdown(nextSong);
             
