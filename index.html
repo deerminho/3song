@@ -98,6 +98,13 @@
         }
         .control-section {
             margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e0f2fe;
+        }
+        .control-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
         }
         .control-title {
             font-size: 16px;
@@ -156,6 +163,43 @@
         }
         .button:active {
             transform: translateY(0);
+        }
+        .button-secondary {
+            background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+        }
+        .mode-toggle {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .mode-btn {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #99f6e4;
+            background: white;
+            color: #0f766e;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .mode-btn.active {
+            background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+            color: white;
+            border-color: #0d9488;
+        }
+        .mode-btn:hover {
+            border-color: #14b8a6;
+        }
+        .random-info {
+            background: #f0fdfa;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            color: #0f766e;
+            margin-top: 10px;
+            line-height: 1.5;
         }
         .playlist-section {
             max-height: 400px;
@@ -269,16 +313,35 @@
             <div class="sidebar">
                 <div class="control-section">
                     <div class="control-title">⏱️ 자동 전환 설정</div>
-                    <div class="timer-control">
-                        <label class="timer-label">다음 영상까지 남은 시간</label>
-                        <div class="timer-input">
-                            <input type="number" id="minutes" placeholder="분" min="0" max="59" value="5">
-                            <span>분</span>
-                            <input type="number" id="seconds" placeholder="초" min="0" max="59" value="0">
-                            <span>초</span>
-                        </div>
+                    
+                    <div class="mode-toggle">
+                        <button class="mode-btn active" id="fixedModeBtn" onclick="setTimerMode('fixed')">
+                            고정 시간
+                        </button>
+                        <button class="mode-btn" id="randomModeBtn" onclick="setTimerMode('random')">
+                            🎲 랜덤
+                        </button>
                     </div>
-                    <button class="button" onclick="applyTimer()">⏰ 타이머 적용</button>
+                    
+                    <div id="fixedTimerSection">
+                        <div class="timer-control">
+                            <label class="timer-label">다음 영상까지 남은 시간</label>
+                            <div class="timer-input">
+                                <input type="number" id="minutes" placeholder="분" min="0" max="59" value="5">
+                                <span>분</span>
+                                <input type="number" id="seconds" placeholder="초" min="0" max="59" value="0">
+                                <span>초</span>
+                            </div>
+                        </div>
+                        <button class="button" onclick="applyTimer()">⏰ 타이머 적용</button>
+                    </div>
+                    
+                    <div id="randomTimerSection" style="display: none;">
+                        <div class="random-info">
+                            🎲 랜덤 모드: 매번 ${Math.floor(RANDOM_TIMER_MIN/60)}분 ~ ${Math.floor(RANDOM_TIMER_MAX/60)}분 사이의 무작위 시간이 설정됩니다.
+                        </div>
+                        <button class="button button-secondary" onclick="applyRandomTimer()">🎲 랜덤 모드 시작</button>
+                    </div>
                 </div>
                 
                 <div class="control-section">
@@ -296,14 +359,34 @@
     </div>
 
     <script>
+        // ==========================================
+        // 설정 영역 (여기만 수정하세요)
+        // ==========================================
+        
         // YouTube API 키 (여기에 본인의 API 키를 입력하세요)
         const API_KEY = 'YOUR_YOUTUBE_API_KEY_HERE';
+        
+        // 재생목록 ID
         const PLAYLIST_ID = 'PLfuYGpnnSBu1v-uyEw7ZeaOc3WoxjIyS6';
+        
+        // 랜덤 타이머 설정 (초 단위)
+        const RANDOM_TIMER_MIN = 180;  // 최소 시간 (기본: 3분)
+        const RANDOM_TIMER_MAX = 600;  // 최대 시간 (기본: 10분)
+        
+        // ==========================================
+        // 이하 코드 수정 금지
+        // ==========================================
         
         let currentVideoIndex = 0;
         let playlistVideos = [];
         let autoSwitchInterval = null;
-        let timerSeconds = 300; // 기본 5분
+        let timerSeconds = 0;
+        let isRandomMode = false;
+        
+        // 랜덤 시간 생성 함수
+        function getRandomTimer() {
+            return Math.floor(Math.random() * (RANDOM_TIMER_MAX - RANDOM_TIMER_MIN + 1)) + RANDOM_TIMER_MIN;
+        }
 
         // 숫자 포맷팅 함수
         function formatNumber(num) {
@@ -397,6 +480,11 @@
         function nextVideo() {
             currentVideoIndex = (currentVideoIndex + 1) % playlistVideos.length;
             playVideo(currentVideoIndex);
+            
+            // 랜덤 모드인 경우 새로운 랜덤 시간 설정
+            if (isRandomMode && autoSwitchInterval) {
+                timerSeconds = getRandomTimer();
+            }
         }
 
         // 자동 전환 시작
@@ -412,8 +500,9 @@
                 
                 const minutes = Math.floor(remainingTime / 60);
                 const seconds = remainingTime % 60;
+                const modeText = isRandomMode ? '🎲 랜덤 모드' : '고정 모드';
                 document.getElementById('statusText').textContent = 
-                    `▶ 연속 재생 중 | 다음 영상까지 ${minutes}분 ${seconds}초`;
+                    `▶ ${modeText} | 다음 영상까지 ${minutes}분 ${seconds}초`;
                 
                 if (remainingTime <= 0) {
                     nextVideo();
@@ -422,15 +511,36 @@
             }, 1000);
         }
 
-        // 타이머 적용
+        // 타이머 모드 변경
+        function setTimerMode(mode) {
+            const fixedBtn = document.getElementById('fixedModeBtn');
+            const randomBtn = document.getElementById('randomModeBtn');
+            const fixedSection = document.getElementById('fixedTimerSection');
+            const randomSection = document.getElementById('randomTimerSection');
+            
+            if (mode === 'fixed') {
+                fixedBtn.classList.add('active');
+                randomBtn.classList.remove('active');
+                fixedSection.style.display = 'block';
+                randomSection.style.display = 'none';
+            } else {
+                fixedBtn.classList.remove('active');
+                randomBtn.classList.add('active');
+                fixedSection.style.display = 'none';
+                randomSection.style.display = 'block';
+            }
+        }
+
+        // 고정 타이머 적용
         function applyTimer() {
             const minutes = parseInt(document.getElementById('minutes').value) || 0;
             const seconds = parseInt(document.getElementById('seconds').value) || 0;
             timerSeconds = minutes * 60 + seconds;
+            isRandomMode = false;
             
             if (timerSeconds > 0) {
                 startAutoSwitch();
-                alert(`타이머가 ${minutes}분 ${seconds}초로 설정되었습니다.`);
+                alert(`고정 타이머가 ${minutes}분 ${seconds}초로 설정되었습니다.`);
             } else {
                 if (autoSwitchInterval) {
                     clearInterval(autoSwitchInterval);
@@ -441,6 +551,18 @@
             }
         }
 
+        // 랜덤 타이머 적용
+        function applyRandomTimer() {
+            isRandomMode = true;
+            timerSeconds = getRandomTimer();
+            
+            const minutes = Math.floor(timerSeconds / 60);
+            const seconds = timerSeconds % 60;
+            
+            startAutoSwitch();
+            alert(`🎲 랜덤 모드 시작!\n첫 전환: ${minutes}분 ${seconds}초 후\n이후 매번 ${Math.floor(RANDOM_TIMER_MIN/65)}~${Math.floor(RANDOM_TIMER_MAX/75)}초 사이 랜덤 설정됩니다.`);
+        }
+
         // 초기화
         if (API_KEY === 'YOUR_YOUTUBE_API_KEY_HERE') {
             document.getElementById('videoTitle').textContent = 
@@ -448,6 +570,10 @@
             document.getElementById('playlist').innerHTML = 
                 '<div class="loading">소스코드에서 API_KEY를 설정해주세요</div>';
         } else {
+            // 기본값으로 랜덤 모드 시작
+            isRandomMode = true;
+            timerSeconds = getRandomTimer();
+            
             loadPlaylist();
             startAutoSwitch();
         }
